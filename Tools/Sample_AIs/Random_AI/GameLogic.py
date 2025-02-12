@@ -22,7 +22,7 @@ class GameLogic:
         move = Move([])
         board = Board(self.col,self.row,self.p)
         board.initialize_game()
-        board.show_board(fh)
+        # board.show_board(fh)
         while True:
             try:
                 move = self.ai_list[player-1].get_move(move)
