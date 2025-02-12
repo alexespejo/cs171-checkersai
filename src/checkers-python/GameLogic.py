@@ -45,7 +45,7 @@ class GameLogic:
                     winPlayer = 1
                 break
             winPlayer = board.is_win(player)
-            # board.show_board(fh)
+            board.show_board(fh)
             if(winPlayer != 0):
                 if self.mode == 'n':#Communate with peer to tell the result.
                     if player == 1:
