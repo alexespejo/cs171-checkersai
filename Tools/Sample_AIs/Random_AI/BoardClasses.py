@@ -323,21 +323,22 @@ class Board:
         @return :
         @raise :
         """
-        print("   ",end="",file=fh)
-        print(*range(0,self.col),sep="  ",file=fh)
-        # index for debugging easily
-        for i, row in enumerate(self.board):
-            print(i, end="",file=fh)
-            # index for debugging easily
-            for j, col in enumerate(row):
-                king = self.board[i][j].is_king
-                if king:
-                    print("%3s" % str(self.board[i][j].get_color()).upper(), end="",file=fh)
-                else:
-                    print("%3s" % str(self.board[i][j].get_color()).lower(), end = "",file=fh)
-                # print("%3s" % str(self.board[i][j]), end="")
-            print(file=fh)
-        print('----------------------',file=fh)
+        print("do something")
+        # print("   ",end="",file=fh)
+        # print(*range(0,self.col),sep="  ",file=fh)
+        # # index for debugging easily
+        # for i, row in enumerate(self.board):
+        #     print(i, end="",file=fh)
+        #     # index for debugging easily
+        #     for j, col in enumerate(row):
+        #         king = self.board[i][j].is_king
+        #         if king:
+        #             print("%3s" % str(self.board[i][j].get_color()).upper(), end="",file=fh)
+        #         else:
+        #             print("%3s" % str(self.board[i][j].get_color()).lower(), end = "",file=fh)
+        #         # print("%3s" % str(self.board[i][j]), end="")
+        #     print(file=fh)
+        # print('----------------------',file=fh)
 
     def check_initial_variable(self):
         """
