@@ -119,7 +119,7 @@ class StudentAI():
         stack.append(node)
         return None
 
-    def simulate(self,  visited, stack, move):
+    def simulate(self,  visited, stack, move=None):
         '''
         One call to this function performs one exploration and should return either a win/loss/tie
         This will randomly go down every node till it stops and then we'll call backprop to add the branch to the tree
@@ -189,32 +189,23 @@ class StudentAI():
         stack = [root]
 
         moves = self.board.get_all_possible_moves(self.color)
-        res = 1
-        found_result = False
-        move = None
-        while res == 1:
-            for move_list in moves:
-                for m in move_list:
-                    res = self.simulate(visited, stack, m)  # 1 simulation
-                    if res != 1:
-                        move = m
-                        found_result = True
-                        break  # Break inner loop
-                if found_result:
-                    break  # Break outer loop
+        res = self.simulate(visited, stack, m)  # 1 simulation
 
+        # dfs stuff
+        # res = 1
+        # found_result = False
+        # move = None
+        # for _ in range(100):
+        #     for move_list in moves:
+        #         for m in move_list:
+        #             res = self.simulate(visited, stack, m)  # 1 simulation
+        #             if res != 1:
+        #                 move = m
+        #                 found_result = True
+        #                 break  # Break inner loop
+        #         if found_result:
+        #             break  # Break outer loop
+        # if move is None:
+        #     move = self.random_move(moves)
         self.board.make_move(move, self.color)
         return move
-
-    # def get_move(self,move):
-    #     if len(move) != 0:
-    #         self.board.make_move(move,self.opponent[self.color])
-    #     else:
-    #         self.color = 1
-    #     root = MCTSNode(self.board)
-    #     moves = self.board.get_all_possible_moves(self.color)
-    #     index = randint(0,len(moves)-1)
-    #     inner_index =  randint(0,len(moves[index])-1)
-    #     move = moves[index][inner_index]
-    #     self.board.make_move(move,self.color)
-    #     return move
