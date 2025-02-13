@@ -60,12 +60,17 @@ class MCTSNode:
     def add_child(self, child_node):
         self.children.append(child_node)
 
-        self.visit_count = 0
-        self.win_count = 0
-        for child in self.children:
-            # the win count is the inverse of it's children's wins
-            self.win_count += (child.visit_count - child.win_count)
-            self.visit_count += child.visit_count
+        if (child_node.terminal):
+            # if it's terminal it's visit count will be 0
+            self.visit_count += 1
+        else:
+            # if it's not terminal, compute the win and visits
+            self.win_count = 0
+            child_wins = 0
+            for child in self.children:
+                self.visit_count += child.visit_count
+                child_wins += child.win_count
+            self.win_count = self.visit_count - child_wins
 
 class StudentAI():
 
@@ -92,7 +97,8 @@ class StudentAI():
     def simulate_turn(self, copy_board, color, visited, stack):
         """Simulate a turn for a given player (AI or opponent)."""
         moves = copy_board.get_all_possible_moves(color)
-        if not moves:
+
+        if not moves: # when a player is out of moves determine if it's a win/loss/tie
             res = copy_board.is_win("W" if color == 2 else "B")
             if res == 0:
                 return None
@@ -113,12 +119,13 @@ class StudentAI():
         stack.append(node)
         return None
 
-    def simulate(self, tree,  visited, stack):
+    def simulate(self,  visited, stack, move):
         '''
         One call to this function performs one exploration and should return either a win/loss/tie
         This will randomly go down every node till it stops and then we'll call backprop to add the branch to the tree
         '''
         copy_board = copy.deepcopy(self.board)
+        # copy_board.make_move(move, self.color)
         for i in range(100):
             # NOTE, the color of the player might be important here
             if self.color == 2:
@@ -139,22 +146,35 @@ class StudentAI():
                 if res is not None:
                     return res
 
-        return None
+        return 0
 
     def backprop(self, root, visited, stack):
         '''
         The idea here is to store the nodes into a stack, once you find a win/loss you start to pop from the stack.
         To build the tree (Could be recursive but I'm lazy)
+
+        parent.simulations = sum(children.simulations)
+        parent.wins = sum(children.wins) - parent.simulations
         '''
-        curr = None
+
+        curr = None # we back propogate when we hit a terminal node
         while stack:
             node = stack.pop()
-            print(node.color)
             if stack:
                 curr = stack[-1]
                 curr.add_child(node)
+                # if (node.terminal):
+                #     # if it's terminal it's visit count will be 0
+                #     curr.visit_count += 1
+                # else:
+                #     # if it's not terminal, compute the win and visits
+                #     curr.win_count = 0
+                #     child_wins = 0
+                #     for child in curr.children:
+                #         curr.visit_count += child.visit_count
+                #         child_wins += child.win_count
+                #     curr.win_count = curr.visit_count - child_wins
             else:
-                node.add_child(curr)
                 curr = node
         return curr
 
@@ -165,27 +185,24 @@ class StudentAI():
             self.color = 1
 
         visited = {}
-        stack = []
         root = MCTSNode(self.board, self.color)
+        stack = [root]
 
-        win, loss = 0, 0
-        # for _ in range(100):
-        res = self.simulate(root, visited, stack) # 1 simulation
-        if res == 1:
-            loss += 1
-        else:
-            win += 1
-        print("win: ", win)
-        print("loss: ", loss)
-
-        test = (self.backprop(root, visited, stack))
-        print(test.color)
-
-        # remove
         moves = self.board.get_all_possible_moves(self.color)
-        index = random.randint(0, len(moves) - 1)
-        inner_index = random.randint(0, len(moves[index]) - 1)
-        move = moves[index][inner_index]
+        res = 1
+        found_result = False
+        move = None
+        while res == 1:
+            for move_list in moves:
+                for m in move_list:
+                    res = self.simulate(visited, stack, m)  # 1 simulation
+                    if res != 1:
+                        move = m
+                        found_result = True
+                        break  # Break inner loop
+                if found_result:
+                    break  # Break outer loop
+
         self.board.make_move(move, self.color)
         return move
 
