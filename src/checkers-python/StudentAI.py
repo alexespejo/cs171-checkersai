@@ -149,6 +149,7 @@ class StudentAI():
         curr = None
         while stack:
             node = stack.pop()
+            print(node.color)
             if stack:
                 curr = stack[-1]
                 curr.add_child(node)
