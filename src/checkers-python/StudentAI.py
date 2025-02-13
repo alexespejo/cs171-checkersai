@@ -156,17 +156,17 @@ class StudentAI():
         stack = []
         root = MCTSNode(self.board, self.color)
 
-        win, loss = 0, 0
-        for _ in range(100):
-            res = self.simulate(root, visited, stack) # 1 simulation
-            if res == 1:
-                loss += 1
-            else:
-                win += 1
-        print("win: ", win)
-        print("loss: ", loss)
+        # win, loss = 0, 0
+        # for _ in range(100):
+        res = self.simulate(root, visited, stack) # 1 simulation
+        #     if res == 1:
+        #         loss += 1
+        #     else:
+        #         win += 1
+        # print("win: ", win)
+        # print("loss: ", loss)
 
-        root.add_child( self.backprop(root, visited, stack))
+        root.add_child(self.backprop(root, visited, stack))
         print(root.win_count)
 
         # remove
