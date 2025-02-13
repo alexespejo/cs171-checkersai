@@ -96,7 +96,10 @@ class StudentAI():
             res = copy_board.is_win("W" if color == 2 else "B")
             if res == 0:
                 return None
-            stack[-1].terminal = True
+            leaf = stack[-1]
+            leaf.terminal = True
+            leaf.win_count = 1
+            leaf.visit_count = 1
             return res
 
         move = self.random_move(moves)
@@ -111,6 +114,10 @@ class StudentAI():
         return None
 
     def simulate(self, tree,  visited, stack):
+        '''
+        One call to this function performs one exploration and should return either a win/loss/tie
+        This will randomly go down every node till it stops and then we'll call backprop to add the branch to the tree
+        '''
         copy_board = copy.deepcopy(self.board)
         for i in range(100):
             # NOTE, the color of the player might be important here
@@ -135,6 +142,10 @@ class StudentAI():
         return None
 
     def backprop(self, root, visited, stack):
+        '''
+        The idea here is to store the nodes into a stack, once you find a win/loss you start to pop from the stack.
+        To build the tree (Could be recursive but I'm lazy)
+        '''
         curr = None
         while stack:
             node = stack.pop()
@@ -156,18 +167,18 @@ class StudentAI():
         stack = []
         root = MCTSNode(self.board, self.color)
 
-        # win, loss = 0, 0
+        win, loss = 0, 0
         # for _ in range(100):
         res = self.simulate(root, visited, stack) # 1 simulation
-        #     if res == 1:
-        #         loss += 1
-        #     else:
-        #         win += 1
-        # print("win: ", win)
-        # print("loss: ", loss)
+        if res == 1:
+            loss += 1
+        else:
+            win += 1
+        print("win: ", win)
+        print("loss: ", loss)
 
-        root.add_child(self.backprop(root, visited, stack))
-        print(root.win_count)
+        test = (self.backprop(root, visited, stack))
+        print(test.color)
 
         # remove
         moves = self.board.get_all_possible_moves(self.color)
