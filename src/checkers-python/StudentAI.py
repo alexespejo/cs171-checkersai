@@ -45,7 +45,7 @@ class MCTSNode:
         self.color = color
         self.parent = parent
         self.move = move
-        self.children = []
+        self.children = set()
         self.visit_count = 0
         self.win_count = 0
         self.uct_value = float('inf')
@@ -58,7 +58,7 @@ class MCTSNode:
         return (self.win_count / self.visit_count) + exploration_weight * (math.sqrt(math.log(num_parent_simulations) / self.visit_count))
 
     def add_child(self, child_hash, visited):
-        self.children.append(child_hash)
+        self.children.add(child_hash)
 
         if (visited[child_hash].terminal):
             # if it's terminal it's visit count will be 0
@@ -121,13 +121,14 @@ class StudentAI():
         stack.append(board_hash)
         return None
 
-    def simulate(self,  visited, stack, move=None):
+    def simulate(self, visited, stack, move=None):
         '''
         One call to this function performs one exploration and should return either a win/loss/tie
         This will randomly go down every node till it stops and then we'll call backprop to add the branch to the tree
         '''
         copy_board = copy.deepcopy(self.board)
-        # copy_board.make_move(move, self.color)
+        if move is not None:
+            copy_board.make_move(move, self.color)
         for i in range(100):
             # NOTE, the color of the player might be important here
             if self.color == 2:
@@ -182,14 +183,19 @@ class StudentAI():
 
         moves = self.board.get_all_possible_moves(self.color)
         move = self.random_move(moves)
-        for _ in range(100):
+        # for move_list in moves:
+        #     for m in move_list:
+        for _ in range(150):
             stack = [hash_start]
             res = self.simulate(visited, stack)
             back = self.backprop(root, visited, stack)
 
-        max_move = -1
-        for child in root.children:
-            max_move = max(visited[child].uct(root.visit_count), max_move)
-
-        self.board.make_move(move, self.color)
-        return move
+        max_uct = -1
+        max_move = None
+        for c in root.children:
+            node = visited[c]
+            if node.uct(root.visit_count) > max_uct:
+                max_move = node.move
+        print(max_move)
+        self.board.make_move(max_move, self.color)
+        return max_move
