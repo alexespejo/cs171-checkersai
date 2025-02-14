@@ -57,10 +57,10 @@ class MCTSNode:
             return float('inf')
         return (self.win_count / self.visit_count) + exploration_weight * (math.sqrt(math.log(num_parent_simulations) / self.visit_count))
 
-    def add_child(self, child_node):
-        self.children.append(child_node)
+    def add_child(self, child_hash, visited):
+        self.children.append(child_hash)
 
-        if (child_node.terminal):
+        if (visited[child_hash].terminal):
             # if it's terminal it's visit count will be 0
             self.visit_count += 1
         else:
@@ -68,8 +68,8 @@ class MCTSNode:
             self.win_count = 0
             child_wins = 0
             for child in self.children:
-                self.visit_count += child.visit_count
-                child_wins += child.win_count
+                self.visit_count += visited[child].visit_count
+                child_wins += visited[child].win_count
             self.win_count = self.visit_count - child_wins
 
 class StudentAI():
@@ -102,7 +102,8 @@ class StudentAI():
             res = copy_board.is_win("W" if color == 2 else "B")
             if res == 0:
                 return None
-            leaf = stack[-1]
+
+            leaf = visited[stack[-1]]
             leaf.terminal = True
             leaf.win_count = 1
             leaf.visit_count = 1
@@ -112,11 +113,12 @@ class StudentAI():
         copy_board.make_move(move, color)
 
         # keep track of each board state to handle different paths that might occur from that state
-        if hash_board(copy_board.board) not in visited:
+        board_hash = hash_board(copy_board.board)
+        if board_hash not in visited:
             # I need to preserve the state somewhere so I can access it on repeated instances
-           visited[hash_board(copy_board.board)] =  MCTSNode(copy_board, color)
-        node = MCTSNode(copy_board, color)
-        stack.append(node)
+            visited[board_hash] =  MCTSNode(copy_board, color)
+            visited[board_hash].move = move
+        stack.append(board_hash)
         return None
 
     def simulate(self,  visited, stack, move=None):
@@ -159,21 +161,11 @@ class StudentAI():
 
         curr = None # we back propogate when we hit a terminal node
         while stack:
-            node = stack.pop()
+            h_top = stack.pop()
+            node = visited[h_top]
             if stack:
-                curr = stack[-1]
-                curr.add_child(node)
-                # if (node.terminal):
-                #     # if it's terminal it's visit count will be 0
-                #     curr.visit_count += 1
-                # else:
-                #     # if it's not terminal, compute the win and visits
-                #     curr.win_count = 0
-                #     child_wins = 0
-                #     for child in curr.children:
-                #         curr.visit_count += child.visit_count
-                #         child_wins += child.win_count
-                #     curr.win_count = curr.visit_count - child_wins
+                curr = visited[stack[-1]]
+                curr.add_child(h_top, visited)
             else:
                 curr = node
         return curr
@@ -184,29 +176,20 @@ class StudentAI():
         else:
             self.color = 1
 
-        visited = {}
+        hash_start = hash_board(self.board.board)
         root = MCTSNode(self.board, self.color)
-        stack = [root]
+        visited = {hash_start: root}
 
         moves = self.board.get_all_possible_moves(self.color)
-        move = self.random_move
-        res = self.simulate(visited, stack)  # 1 simulation
+        move = self.random_move(moves)
+        for _ in range(100):
+            stack = [hash_start]
+            res = self.simulate(visited, stack)
+            back = self.backprop(root, visited, stack)
 
-        # dfs stuff
-        # res = 1
-        # found_result = False
-        # move = None
-        # for _ in range(100):
-        #     for move_list in moves:
-        #         for m in move_list:
-        #             res = self.simulate(visited, stack, m)  # 1 simulation
-        #             if res != 1:
-        #                 move = m
-        #                 found_result = True
-        #                 break  # Break inner loop
-        #         if found_result:
-        #             break  # Break outer loop
-        # if move is None:
-        #     move = self.random_move(moves)
+        max_move = -1
+        for child in root.children:
+            max_move = max(visited[child].uct(root.visit_count), max_move)
+
         self.board.make_move(move, self.color)
         return move
