@@ -196,6 +196,5 @@ class StudentAI():
             node = visited[c]
             if node.uct(root.visit_count) > max_uct:
                 max_move = node.move
-        print(max_move)
         self.board.make_move(max_move, self.color)
         return max_move
