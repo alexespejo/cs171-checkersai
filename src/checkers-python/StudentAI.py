@@ -189,7 +189,8 @@ class StudentAI():
         stack = [root]
 
         moves = self.board.get_all_possible_moves(self.color)
-        res = self.simulate(visited, stack, m)  # 1 simulation
+        move = self.random_move
+        res = self.simulate(visited, stack)  # 1 simulation
 
         # dfs stuff
         # res = 1
