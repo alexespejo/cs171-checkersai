@@ -23,7 +23,7 @@ class MCTSNode:
         self.color = color
         self.parent = parent
         self.move = move
-        self.children = [] 
+        self.children = set() 
         self.visit_count = 0
         self.win_count = 0
         self.uct_value = float('inf')
@@ -37,7 +37,7 @@ class MCTSNode:
 
     # This is used in the backpropogation step to handle the children and update the visit and win count
     def add_child(self, child_hash, visited):
-        self.children.append(child_hash)
+        self.children.add(child_hash)
 
         if (not self.terminal):
             # if it's not terminal, compute the win and visits
@@ -45,9 +45,7 @@ class MCTSNode:
             self.visit_count = 0
             child_wins = 0
             for child in self.children:
-                
                 # if (len(self.children) > 1): ### Detects if multiple children exist in a branch (happens when dupes are found)
-                #     print()
                 #     visited[child].game_state.show_board()
                 self.visit_count += visited[child].visit_count
                 child_wins += visited[child].win_count
@@ -81,8 +79,8 @@ class StudentAI():
 
         if not moves: 
             res = copy_board.is_win("W" if color == 2 else "B")
-            if res == 0:
-                return None
+            # if res == 0:
+                # return None
 
             leaf = visited[stack[-1]]
             leaf.terminal = True
@@ -92,17 +90,22 @@ class StudentAI():
 
         move = self.random_move(moves)
         copy_board.make_move(move, color)
-
         board_hash = hash_board(copy_board.board)
-        ### Cycle detection 
-        # if board_hash in self.cycle_set:
-            
-            ### This is how you end the simulation step
-            # leaf = visited[stack[-1]]
-            # leaf.terminal = True
-            # leaf.win_count = 1
-            # leaf.visit_count = 1
-            # return -1
+
+        while len(moves) > 1 and board_hash in self.cycle_set:
+            copy_board.undo()
+            move = self.random_move(moves)
+            copy_board.make_move(move, color)
+            board_hash = hash_board(copy_board.board)
+
+        if len(moves) == 1 and board_hash in self.cycle_set:
+            ## This is how you end the simulation step
+            # print('no more moves ')
+            leaf = visited[stack[-1]]
+            leaf.terminal = True
+            leaf.win_count = 1
+            leaf.visit_count = 1
+            return -1 
 
         if board_hash not in visited:
             ### Preserve the node to save space 
@@ -131,23 +134,6 @@ class StudentAI():
             res = self.simulate_turn(copy_board,self.opponent[self.color], visited, stack)
             if res is not None:
                 return res 
-                
-#             if self.color == 2:
-#                 res = self.simulate_turn(copy_board, self.color, visited, stack)
-#                 if res is not None:
-#                     return res
-# 
-#                 res = self.simulate_turn(copy_board,1, visited, stack)
-#                 if res is not None:
-#                     return res
-#             else:
-#                 res = self.simulate_turn(copy_board, self.color, visited, stack)
-#                 if res is not None:
-#                     return res
-# 
-#                 res = self.simulate_turn(copy_board, 2, visited, stack)
-#                 if res is not None:
-#                     return res
 
         return 0
 
@@ -184,17 +170,18 @@ class StudentAI():
         moves = self.board.get_all_possible_moves(self.color)
         # move = self.random_move(moves)
 
-        for _ in range(169):
+        for _ in range(500):
             stack = [hash_start]
             self.simulate(visited, stack)
             self.backprop(visited, stack)
 
         ### Debug the final node call the functions on root 
-
+        # print(len(moves))
         # for c in root.children:
         #     node = visited[c]
-        #     print(node.visit_count, end=" ")
+        #     print(c)
         # print("Parent visits: " + str(root.visit_count))
+        # print("child visits: " + str(len(root.children)))
 
         max_uct = -1
         max_move = None
@@ -202,6 +189,7 @@ class StudentAI():
             node = visited[c]
             if node.uct(root.visit_count) > max_uct:
                 max_move = node.move
+                max_uct = node.uct(root.visit_count)
 
         self.board.make_move(max_move, self.color)
         return max_move
