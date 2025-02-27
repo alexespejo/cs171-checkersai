@@ -3,6 +3,7 @@ import copy
 import math
 from BoardClasses import Move
 from BoardClasses import Board
+import time
 #The following part should be completed by students.
 #Students can modify anything except the class name and exisiting functions and varibles.
 
@@ -65,6 +66,7 @@ class StudentAI():
         self.opponent = {1:2,2:1}
         self.color = 2
         self.cycle_set = set()
+        self.limit_count = 0
 
     def random_move(self, moves):
         if not moves: 
@@ -98,12 +100,14 @@ class StudentAI():
             copy_board.make_move(move, color)
             board_hash = hash_board(copy_board.board)
 
-        if len(moves) == 1 and board_hash in self.cycle_set:
+        if (len(moves) == 1 and board_hash in self.cycle_set) or len(stack)// 2 == 30:
             ## This is how you end the simulation step
             # print('no more moves ')
+            if len(stack)// 2 == 30:
+                self.limit_count += 1
             leaf = visited[stack[-1]]
             leaf.terminal = True
-            leaf.win_count = 1
+            leaf.win_count = 0
             leaf.visit_count = 1
             return -1 
 
@@ -168,21 +172,12 @@ class StudentAI():
         visited = {hash_start: root}
 
         moves = self.board.get_all_possible_moves(self.color)
-        # move = self.random_move(moves)
 
         for _ in range(500):
             stack = [hash_start]
             self.simulate(visited, stack)
             self.backprop(visited, stack)
-
-        ### Debug the final node call the functions on root 
-        # print(len(moves))
-        # for c in root.children:
-        #     node = visited[c]
-        #     print(c)
-        # print("Parent visits: " + str(root.visit_count))
-        # print("child visits: " + str(len(root.children)))
-
+        
         max_uct = -1
         max_move = None
         for c in root.children:
@@ -192,4 +187,5 @@ class StudentAI():
                 max_uct = node.uct(root.visit_count)
 
         self.board.make_move(max_move, self.color)
+
         return max_move
