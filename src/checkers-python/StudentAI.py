@@ -20,7 +20,8 @@ def hash_board(board):
 # 0: white, 1: black
 class MCTSNode:
     def __init__(self, game_state, color, parent=None,  move=None):
-        self.game_state = copy.deepcopy(game_state)
+        # self.game_state = copy.deepcopy(game_state)
+        self.game_state =  None
         self.color = color
         self.parent = parent
         self.move = move
@@ -94,13 +95,13 @@ class StudentAI():
         copy_board.make_move(move, color)
         board_hash = hash_board(copy_board.board)
 
-        while len(moves) > 1 and board_hash in self.cycle_set:
+        while len(moves) > 1 and board_hash in stack:
             copy_board.undo()
             move = self.random_move(moves)
             copy_board.make_move(move, color)
             board_hash = hash_board(copy_board.board)
 
-        if (len(moves) == 1 and board_hash in self.cycle_set) or len(stack)// 2 == 30:
+        if (len(moves) == 1 and board_hash in stack) or len(stack)// 2 == 30:
             ## This is how you end the simulation step
             # print('no more moves ')
             if len(stack)// 2 == 30:
@@ -116,7 +117,7 @@ class StudentAI():
             visited[board_hash] =  MCTSNode(copy_board, color)
             visited[board_hash].move = move 
 
-        self.cycle_set.add(board_hash)
+        # self.cycle_set.add(board_hash)
         stack.append(board_hash)
         return None
 
@@ -125,8 +126,9 @@ class StudentAI():
         One call to this function performs one exploration and should return either a win/loss/tie
         This will randomly go down every node till it stops and then we'll call backprop to add the branch to the tree
         '''
-        self.cycle_set.clear()
-        copy_board = copy.deepcopy(self.board)
+        # self.cycle_set.clear()
+        # hash_board = hash_board(self.board.board)
+        copy_board = copy.deepcopy(self.board) 
         if move is not None:
             copy_board.make_move(move, self.color)
         for _ in range(100):
@@ -149,8 +151,7 @@ class StudentAI():
         parent.simulations = sum(children.simulations)
         parent.wins = sum(children.wins) - parent.simulations
         '''
-
-        curr = None # we back propogate when we hit a terminal node
+        curr = None 
         while stack:
             h_top = stack.pop()
             node = visited[h_top]
@@ -171,13 +172,14 @@ class StudentAI():
         root = MCTSNode(self.board, self.color)
         visited = {hash_start: root}
 
-        moves = self.board.get_all_possible_moves(self.color)
-
-        for _ in range(500):
+        start_time = time.time()
+        iterations = 0
+        while time.time() - start_time < 25 and iterations < 500:
             stack = [hash_start]
             self.simulate(visited, stack)
             self.backprop(visited, stack)
-        
+            iterations += 1
+            
         max_uct = -1
         max_move = None
         for c in root.children:
