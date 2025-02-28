@@ -317,6 +317,7 @@ class Board:
             return 0
 
     def show_board(self,fh=None):
+        return
         """
         prints board to console or to file
         @param fh: file object, incase we need to print to file
