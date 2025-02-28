@@ -3,12 +3,20 @@ import subprocess
 
 def run_command(command):
     process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    commands = [
+        "python3 AI_Runner.py 8 8 3 l Sample_AIs/Poor_AI/main.py ../src/checkers-python/main.py",
+        "python3 AI_Runner.py 8 8 3 l ../src/checkers-python/main.py Sample_AIs/Poor_AI/main.py"
+    ]
     stdout, stderr = process.communicate()
     if stdout:
         print(f"[STDOUT] {stdout.decode().strip()}")
     if stderr:
         print(f"[STDERR] {stderr.decode().strip()}")
-    print(f"Finished executing: {command}")
+
+    if (command == commands[0]):
+        print("player (2)")
+    else:
+        print("player (2)")
 
 def main():
     commands = [
