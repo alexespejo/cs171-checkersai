@@ -126,13 +126,10 @@ class StudentAI():
         One call to this function performs one exploration and should return either a win/loss/tie
         This will randomly go down every node till it stops and then we'll call backprop to add the branch to the tree
         '''
-        # self.cycle_set.clear()
-        # hash_board = hash_board(self.board.board)
         copy_board = copy.deepcopy(self.board) 
         if move is not None:
             copy_board.make_move(move, self.color)
         for _ in range(100):
-            ### I think this is a shorter version of what I commented out on lines 135 - 150 but if shit breaks change it back
             res = self.simulate_turn(copy_board, self.color, visited, stack)
             if res is not None:
                 return res
@@ -174,7 +171,10 @@ class StudentAI():
 
         start_time = time.time()
         iterations = 0
-        while time.time() - start_time < 25 and iterations < 500:
+
+        while time.time() - start_time < 25 and iterations < 1000:
+            if time.time() - start_time >= 25:
+                break
             stack = [hash_start]
             self.simulate(visited, stack)
             self.backprop(visited, stack)

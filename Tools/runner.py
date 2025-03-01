@@ -9,14 +9,14 @@ def run_command(command):
     ]
     stdout, stderr = process.communicate()
     if stdout:
-        print(f"[STDOUT] {stdout.decode().strip()}")
+        print(f"{stdout.decode().strip()}", end=" playing as: ")
     if stderr:
-        print(f"[STDERR] {stderr.decode().strip()}")
+        print(f"{stderr.decode().strip()}", end=" playing as: ")
 
     if (command == commands[0]):
-        print("player (2)")
+      print("player (2)")
     else:
-        print("player (2)")
+      print("player (1)")
 
 def main():
     commands = [
