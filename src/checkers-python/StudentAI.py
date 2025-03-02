@@ -101,7 +101,7 @@ class StudentAI():
             copy_board.make_move(move, color)
             board_hash = hash_board(copy_board.board)
 
-        if (len(moves) == 1 and board_hash in stack) or len(stack)// 2 == 30:
+        if (len(moves) == 1 and board_hash in stack) or len(stack) >= 50:
             ## This is how you end the simulation step
             # print('no more moves ')
             if len(stack)// 2 == 30:
@@ -172,7 +172,7 @@ class StudentAI():
         start_time = time.time()
         iterations = 0
 
-        while time.time() - start_time < 25 and iterations < 1000:
+        while time.time() - start_time < 25 and iterations < 600:
             if time.time() - start_time >= 25:
                 break
             stack = [hash_start]
