@@ -102,10 +102,9 @@ class StudentAI():
             board_hash = hash_board(copy_board.board)
 
         if (len(moves) == 1 and board_hash in stack) or len(stack) >= 50:
-            ## This is how you end the simulation step
-            # print('no more moves ')
-            if len(stack)// 2 == 30:
+            if len(stack)// 2 == 25:
                 self.limit_count += 1
+
             leaf = visited[stack[-1]]
             leaf.terminal = True
             leaf.win_count = 0
@@ -126,7 +125,7 @@ class StudentAI():
         One call to this function performs one exploration and should return either a win/loss/tie
         This will randomly go down every node till it stops and then we'll call backprop to add the branch to the tree
         '''
-        copy_board = copy.deepcopy(self.board) 
+        copy_board = self.board
         if move is not None:
             copy_board.make_move(move, self.color)
         for _ in range(100):
@@ -140,7 +139,7 @@ class StudentAI():
 
         return 0
 
-    def backprop(self, visited, stack):
+    def backprop(self, visited, stack, original_board):
         '''
         The idea here is to store the nodes into a stack, once you find a win/loss you start to pop from the stack.
         To build the tree (Could be recursive but I'm lazy)
@@ -152,6 +151,10 @@ class StudentAI():
         while stack:
             h_top = stack.pop()
             node = visited[h_top]
+
+            if (self.board.saved_move and hash_board(self.board.board) != original_board):
+                self.board.undo()
+
             if stack:
                 curr = visited[stack[-1]]
                 curr.add_child(h_top, visited)
@@ -168,26 +171,30 @@ class StudentAI():
         hash_start = hash_board(self.board.board)
         root = MCTSNode(self.board, self.color)
         visited = {hash_start: root}
+        moves = self.board.get_all_possible_moves(self.color)
 
         start_time = time.time()
         iterations = 0
 
-        while time.time() - start_time < 25 and iterations < 600:
-            if time.time() - start_time >= 25:
-                break
-            stack = [hash_start]
-            self.simulate(visited, stack)
-            self.backprop(visited, stack)
-            iterations += 1
-            
-        max_uct = -1
-        max_move = None
-        for c in root.children:
-            node = visited[c]
-            if node.uct(root.visit_count) > max_uct:
-                max_move = node.move
-                max_uct = node.uct(root.visit_count)
+        if (len(moves) > 1):
+            while time.time() - start_time < 5 and iterations < 1000:
+                if time.time() - start_time >= 5:
+                    print("times up")
+                    break
+                stack = [hash_start]
+                self.simulate(visited, stack)
+                self.backprop(visited, stack, hash_start)
+                iterations += 1
+                
+            max_uct = -1
+            max_move = None
+            for c in root.children:
+                node = visited[c]
+                if node.uct(root.visit_count) > max_uct:
+                    max_move = node.move
+                    max_uct = node.uct(root.visit_count)
+        else:
+            max_move = moves[0][0]
 
         self.board.make_move(max_move, self.color)
-
         return max_move
