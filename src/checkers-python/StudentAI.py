@@ -108,7 +108,7 @@ class StudentAI():
         if (len(moves) == 1 and board_hash in stack) or len(stack) >= 60:
             if len(stack)// 2 == 30:
                 self.limit_count += 1
-                
+
             leaf = visited[stack[-1]]
             leaf.terminal = True
             leaf.win_count = 0
@@ -177,8 +177,8 @@ class StudentAI():
         iterations = 0
 
         if (len(moves) > 1):
-            while time.time() - start_time < 10 and iterations < 1000:
-                if time.time() - start_time >= 10:
+            while time.time() - start_time < 15 and iterations < 1000:
+                if time.time() - start_time >= 15:
                     break
                 stack = [hash_start]
                 self.simulate(visited, stack)
