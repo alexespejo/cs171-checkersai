@@ -116,6 +116,7 @@ class StudentAI():
             if len(stack)// 2 == 30:
                 self.limit_count += 1
 
+
             leaf = visited[stack[-1]]
             leaf.terminal = True
             leaf.win_count = 0
@@ -135,7 +136,7 @@ class StudentAI():
         One call to this function performs one exploration and should return either a win/loss/tie
         This will randomly go down every node till it stops and then we'll call backprop to add the branch to the tree
         '''
-        copy_board = copy.deepcopy(self.board) 
+        copy_board = copy.deepcopy(self.board)
         if move is not None:
             copy_board.make_move(move, self.color)
         for _ in range(100):
@@ -149,7 +150,7 @@ class StudentAI():
 
         return 0
 
-    def backprop(self, visited, stack):
+    def backprop(self, visited, stack, original_board):
         '''
         The idea here is to store the nodes into a stack, once you find a win/loss you start to pop from the stack.
         To build the tree (Could be recursive but I'm lazy)
@@ -161,6 +162,10 @@ class StudentAI():
         while stack:
             h_top = stack.pop()
             node = visited[h_top]
+
+            # if (self.board.saved_move and hash_board(self.board.board) != original_board):
+            #     self.board.undo()
+
             if stack:
                 curr = visited[stack[-1]]
                 curr.add_child(h_top, visited)
@@ -202,5 +207,4 @@ class StudentAI():
             max_move = moves[0][0]
 
         self.board.make_move(max_move, self.color)
-
         return max_move
