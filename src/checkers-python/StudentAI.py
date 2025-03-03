@@ -95,17 +95,20 @@ class StudentAI():
         copy_board.make_move(move, color)
         board_hash = hash_board(copy_board.board)
 
+        loop_counter = 0
         while len(moves) > 1 and board_hash in stack:
+            if loop_counter >= 20:  # Limit the number of iterations
+                return -15
             copy_board.undo()
             move = self.random_move(moves)
             copy_board.make_move(move, color)
             board_hash = hash_board(copy_board.board)
+            loop_counter += 1
 
-        if (len(moves) == 1 and board_hash in stack) or len(stack) >= 50:
-            ## This is how you end the simulation step
-            # print('no more moves ')
+        if (len(moves) == 1 and board_hash in stack) or len(stack) >= 60:
             if len(stack)// 2 == 30:
                 self.limit_count += 1
+                
             leaf = visited[stack[-1]]
             leaf.terminal = True
             leaf.win_count = 0
@@ -168,25 +171,29 @@ class StudentAI():
         hash_start = hash_board(self.board.board)
         root = MCTSNode(self.board, self.color)
         visited = {hash_start: root}
+        moves = self.board.get_all_possible_moves(self.color)
 
         start_time = time.time()
         iterations = 0
 
-        while time.time() - start_time < 25 and iterations < 600:
-            if time.time() - start_time >= 25:
-                break
-            stack = [hash_start]
-            self.simulate(visited, stack)
-            self.backprop(visited, stack)
-            iterations += 1
-            
-        max_uct = -1
-        max_move = None
-        for c in root.children:
-            node = visited[c]
-            if node.uct(root.visit_count) > max_uct:
-                max_move = node.move
-                max_uct = node.uct(root.visit_count)
+        if (len(moves) > 1):
+            while time.time() - start_time < 10 and iterations < 1000:
+                if time.time() - start_time >= 10:
+                    break
+                stack = [hash_start]
+                self.simulate(visited, stack)
+                self.backprop(visited, stack)
+                iterations += 1
+                
+            max_uct = -1
+            max_move = None
+            for c in root.children:
+                node = visited[c]
+                if node.uct(root.visit_count) > max_uct:
+                    max_move = node.move
+                    max_uct = node.uct(root.visit_count)
+        else:
+            max_move = moves[0][0]
 
         self.board.make_move(max_move, self.color)
 
