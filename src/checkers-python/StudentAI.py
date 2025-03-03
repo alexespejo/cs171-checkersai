@@ -125,7 +125,7 @@ class StudentAI():
         One call to this function performs one exploration and should return either a win/loss/tie
         This will randomly go down every node till it stops and then we'll call backprop to add the branch to the tree
         '''
-        copy_board = self.board
+        copy_board = copy.deepcopy(self.board)
         if move is not None:
             copy_board.make_move(move, self.color)
         for _ in range(100):
@@ -152,8 +152,8 @@ class StudentAI():
             h_top = stack.pop()
             node = visited[h_top]
 
-            if (self.board.saved_move and hash_board(self.board.board) != original_board):
-                self.board.undo()
+            # if (self.board.saved_move and hash_board(self.board.board) != original_board):
+            #     self.board.undo()
 
             if stack:
                 curr = visited[stack[-1]]
@@ -177,10 +177,7 @@ class StudentAI():
         iterations = 0
 
         if (len(moves) > 1):
-            while time.time() - start_time < 5 and iterations < 1000:
-                if time.time() - start_time >= 5:
-                    print("times up")
-                    break
+            while time.time() - start_time < 8 and iterations < 1000:
                 stack = [hash_start]
                 self.simulate(visited, stack)
                 self.backprop(visited, stack, hash_start)
