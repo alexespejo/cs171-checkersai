@@ -17,9 +17,16 @@ def hash_board(board):
     )
     return hash(board_tuple)
 
+def valid_move(moves, max_move):
+    for row in moves:
+        for move in row:
+            if str(move) == str(max_move):
+                return True
+    return False
+
 # 0: white, 1: black
 class MCTSNode:
-    def __init__(self, game_state, color, parent=None,  move=None):
+    def __init__(self, color, parent=None,  move=None):
         # self.game_state = copy.deepcopy(game_state)
         self.game_state =  None
         self.color = color
@@ -95,15 +102,20 @@ class StudentAI():
         copy_board.make_move(move, color)
         board_hash = hash_board(copy_board.board)
 
+        loop_counter = 0
         while len(moves) > 1 and board_hash in stack:
+            if loop_counter >= 20:  # Limit the number of iterations
+                return -15
             copy_board.undo()
             move = self.random_move(moves)
             copy_board.make_move(move, color)
             board_hash = hash_board(copy_board.board)
+            loop_counter += 1
 
-        if (len(moves) == 1 and board_hash in stack) or len(stack) >= 50:
-            if len(stack)// 2 == 25:
+        if (len(moves) == 1 and board_hash in stack) or len(stack) >= 60:
+            if len(stack)// 2 == 30:
                 self.limit_count += 1
+
 
             leaf = visited[stack[-1]]
             leaf.terminal = True
@@ -112,8 +124,7 @@ class StudentAI():
             return -1 
 
         if board_hash not in visited:
-            ### Preserve the node to save space 
-            visited[board_hash] =  MCTSNode(copy_board, color)
+            visited[board_hash] =  MCTSNode(color)
             visited[board_hash].move = move 
 
         # self.cycle_set.add(board_hash)
@@ -169,7 +180,7 @@ class StudentAI():
             self.color = 1
 
         hash_start = hash_board(self.board.board)
-        root = MCTSNode(self.board, self.color)
+        root = MCTSNode(self.color)
         visited = {hash_start: root}
         moves = self.board.get_all_possible_moves(self.color)
 
@@ -177,17 +188,19 @@ class StudentAI():
         iterations = 0
 
         if (len(moves) > 1):
-            while time.time() - start_time < 8 and iterations < 1000:
+            while time.time() - start_time < 15 and iterations < 1000:
+                if time.time() - start_time >= 15:
+                    break
                 stack = [hash_start]
                 self.simulate(visited, stack)
-                self.backprop(visited, stack, hash_start)
+                self.backprop(visited, stack)
                 iterations += 1
                 
             max_uct = -1
-            max_move = None
+            max_move = self.random_move(moves)
             for c in root.children:
                 node = visited[c]
-                if node.uct(root.visit_count) > max_uct:
+                if node.uct(root.visit_count) > max_uct and valid_move(moves, node.move):
                     max_move = node.move
                     max_uct = node.uct(root.visit_count)
         else:
