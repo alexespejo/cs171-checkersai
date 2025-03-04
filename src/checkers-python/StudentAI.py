@@ -150,7 +150,7 @@ class StudentAI():
 
         return 0
 
-    def backprop(self, visited, stack, original_board):
+    def backprop(self, visited, stack):
         '''
         The idea here is to store the nodes into a stack, once you find a win/loss you start to pop from the stack.
         To build the tree (Could be recursive but I'm lazy)
@@ -188,8 +188,8 @@ class StudentAI():
         iterations = 0
 
         if (len(moves) > 1):
-            while time.time() - start_time < 15 and iterations < 1000:
-                if time.time() - start_time >= 15:
+            while time.time() - start_time < 5 and iterations < 1000:
+                if time.time() - start_time >= 5:
                     break
                 stack = [hash_start]
                 self.simulate(visited, stack)
