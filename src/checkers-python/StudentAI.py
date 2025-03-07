@@ -166,35 +166,22 @@ class StudentAI():
                 self.leaves += 1
                 return res 
 
-        node = self.visited[self.stack[-1]]
-        self.make_terminal(node)
-        
-        if (winning(self.color, copy_board.board)):
-            if node.color != self.color:
-                node.wins = 0
-        else:
-            if node.color == self.color:
-                node.wins = 0
-        return node 
+        return 0
 
-    def backpropagation(self, starting_board):
-        def add_child(nh, ch):
-            node = self.visited[nh]        
-            if node.limited:
-                node.terminal = False
-            node.children.add(ch)
+    def backprop(self, visited, stack):
+        '''
+        The idea here is to store the nodes into a stack, once you find a win/loss you start to pop from the stack.
+        To build the tree (Could be recursive but I'm lazy)
 
-            node.visits = 0
-            node.wins = 0
-            wins = 0
-            for c in node.children:
-                child_node = self.visited[c]
-                node.visits += child_node.visits
-                wins += child_node.wins
-            node.wins = node.visits - wins
+        parent.simulations = sum(children.simulations)
+        parent.wins = sum(children.wins) - parent.simulations
+        '''
+        curr = None 
+        while stack:
+            h_top = stack.pop()
+            node = visited[h_top]
 
-        while self.stack:
-            # if self.stack[-1] != starting_board:
+            # if (self.board.saved_move and hash_board(self.board.board) != original_board):
             #     self.board.undo()
             top = self.stack.pop()
             
@@ -208,24 +195,13 @@ class StudentAI():
             self.color = 1
 
         moves = self.board.get_all_possible_moves(self.color)
-        temp = hash_board(self.board.board)
-        root = MCTSNode(color=self.color, move=None)
-        max_move = self.random_move(moves)
 
-        if has_only_one_item(moves):
-            max_move = moves[0][0]
-        else:
-            if temp not in self.visited:
-                self.visited[temp] = root
-            self.prev_node = root
-            board_moves = {}
-            for row in moves:
-                for move in row:
-                    board_moves[str(move)] = MCTSNode(color=self.color, move=move)
-            
-            start_time = time.time()
-            for _ in range(self.iterations):
-                if time.time() - start_time > 15:
+        start_time = time.time()
+        iterations = 0
+
+        if (len(moves) > 1):
+            while time.time() - start_time < 5 and iterations < 1000:
+                if time.time() - start_time >= 5:
                     break
                 self.move = None
                 self.stack = [temp]
