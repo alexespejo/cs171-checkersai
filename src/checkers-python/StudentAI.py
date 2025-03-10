@@ -1,14 +1,15 @@
 import random
-from BoardClasses import Move
-from BoardClasses import Board
 import math
 import copy
 import hashlib
 import time
+from BoardClasses import Move
+from BoardClasses import Board
 
 #The following part should be completed by students.
 #Students can modify anything except the class name and exisiting functions and varibles.
-def hash_board(board):
+
+def hash_board(board: Board) -> str:
     """
     Hashes the checkers board state.
     :param board: Board object
@@ -21,14 +22,25 @@ def hash_board(board):
     )
     return hashlib.sha256(board_str.encode()).hexdigest()
 
-def valid_move(moves, max_move):
+def valid_move(moves: list, max_move: Move) -> bool:
+    """
+    Checks if a move is in the list of valid moves.
+    :param moves: List of possible moves
+    :param max_move: Move to validate
+    :return: True if valid, False otherwise
+    """
     for row in moves:
         for move in row:
             if str(move) == str(max_move):
                 return True
     return False
 
-def has_only_one_item(matrix):
+def has_only_one_item(matrix: list) -> bool:
+    """
+    Checks if a matrix has only one item.
+    :param matrix: List of lists
+    :return: True if only one item, False otherwise
+    """
     count = 0
     for row in matrix:
         count += len(row)
@@ -36,19 +48,54 @@ def has_only_one_item(matrix):
             return False
     return count == 1
 
-def winning(color, board):
-    white_count = 0
-    black_count = 0
+def winning(color: int, board: Board) -> bool:
+    """
+    Determines if the given color is winning.
+    :param color: Player color (1 for white, 2 for black)
+    :param board: Current board state
+    :return: True if winning, False otherwise
+    """
+    white_pieces = 0
+    black_pieces = 0
+    white_kings = 0
+    black_kings = 0
+
     for row in board:
         for checker in row:
-            if checker.color == "W":
-                white_count += 1
-            elif checker.color == "B":
-                black_count += 1
+            if checker:
+                if checker.color == "W":
+                    white_pieces += 1
+                    if checker.is_king:
+                        white_kings += 1
+                else:
+                    black_pieces += 1
+                    if checker.is_king:
+                        black_kings += 1
+    total_pieces = white_pieces + black_pieces
+
+    if total_pieces > 20: 
+        piece_weight = 1.0
+        king_weight = 1.5
+    elif 10 <= total_pieces <= 20:  
+        piece_weight = 1.0
+        king_weight = 2.0
+    else:  
+        piece_weight = 1.0
+        king_weight = 3.0 
+
+    white_score = (
+        piece_weight * (white_pieces - white_kings)
+        + king_weight * white_kings
+    )
+    black_score = (
+        piece_weight * (black_pieces - black_kings)
+        + king_weight * black_kings
+    )
+
     if color == 1:
-        return white_count < black_count
+        return white_score < black_score
     else:
-        return black_count < white_count
+        return black_score < white_score
         
 class MCTSNode:
     def __init__(self, parent=None, move=None, color=None):
@@ -62,20 +109,24 @@ class MCTSNode:
         self.limited = False
         self.winner = None
 
-    def uct(self,  num_parent_simulations, exploration_weight=1.0):
+    def uct(self,  num_parent_simulations: int, exploration_weight: float = 1.0) -> float:
+        """
+        Calculates the UCT value.
+        :param num_parent_simulations: Number of parent simulations
+        :param exploration_weight: Exploration factor
+        :return: UCT value
+        """
         if self.visits == 0:
             return float('inf')
         return (self.wins/ self.visits) + exploration_weight * (math.sqrt(math.log(num_parent_simulations) / self.visits))
 
 class StudentAI():
-
-    def __init__(self,col,row,p):
+    def __init__(self, col, row, p):
         self.col = col
         self.row = row
         self.p = p
         self.board = Board(col,row,p)
         self.board.initialize_game()
-        self.color = ''
         self.opponent = {1:2,2:1}
         self.color = 2
         self.visited = {}
@@ -89,29 +140,35 @@ class StudentAI():
         self.move = None
         self.prev_node = None
 
-    def make_terminal(self, node):
+    def make_terminal(self, node: MCTSNode) -> None:
+        """
+        Makes node terminal.
+        :param node: Node to make terminal
+        """
         self.terminal_nodes += 1
         node.terminal = True
         node.wins = 1
         node.visits = 1
-        pass
 
-
-    def valid_move(self, moves, move):
-        for row in moves:
-            for m in row:
-                if m == move:
-                    return True
-        return False
-
-    def random_move(self, moves):
+    def random_move(self, moves: list) -> Move:
+        """
+        Selects a random move from available moves.
+        :param moves: List of possible moves
+        :return: Randomly selected move
+        """
         if not moves: 
             return None
         index = random.randint(0, len(moves) - 1)
         inner_index = random.randint(0, len(moves[index]) - 1)
         return moves[index][inner_index]
 
-    def simulate_turn(self, board, color):
+    def simulate_turn(self, board: Board, color: int) -> MCTSNode:
+        """
+        Simulates a turn in the game.
+        :param board: Current board state
+        :param color: Player color
+        :return: Node representing the result of the turn
+        """
         is_win = board.is_win(color)
         moves = board.get_all_possible_moves(color)
         hashed = hash_board(board.board)
@@ -166,42 +223,66 @@ class StudentAI():
                 self.leaves += 1
                 return res 
 
-        return 0
+        node = self.visited[self.stack[-1]]
+        self.make_terminal(node)
+        
+        if (winning(self.color, copy_board.board)):
+            if node.color != self.color:
+                node.wins = 0
+        else:
+            if node.color == self.color:
+                node.wins = 0
+        return node 
 
-    def backprop(self, visited, stack):
-        '''
-        The idea here is to store the nodes into a stack, once you find a win/loss you start to pop from the stack.
-        To build the tree (Could be recursive but I'm lazy)
+    def backpropagation(self, starting_board):
+        def add_child(nh, ch):
+            node = self.visited[nh]        
+            if node.limited:
+                node.terminal = False
+            node.children.add(ch)
 
-        parent.simulations = sum(children.simulations)
-        parent.wins = sum(children.wins) - parent.simulations
-        '''
-        curr = None 
-        while stack:
-            h_top = stack.pop()
-            node = visited[h_top]
+            node.visits = 0
+            node.wins = 0
+            wins = 0
+            for c in node.children:
+                child_node = self.visited[c]
+                node.visits += child_node.visits
+                wins += child_node.wins
+            node.wins = node.visits - wins
 
-            # if (self.board.saved_move and hash_board(self.board.board) != original_board):
+        while self.stack:
+            # if self.stack[-1] != starting_board:
             #     self.board.undo()
             top = self.stack.pop()
             
             if self.stack:
                 add_child(self.stack[-1], top)
 
-    def get_move(self,move):
+    def get_move(self, move: Move) -> Move:
         if len(move) != 0:
             self.board.make_move(move,self.opponent[self.color])
         else:
             self.color = 1
 
         moves = self.board.get_all_possible_moves(self.color)
+        temp = hash_board(self.board.board)
+        root = MCTSNode(color=self.color, move=None)
+        max_move = self.random_move(moves)
 
-        start_time = time.time()
-        iterations = 0
-
-        if (len(moves) > 1):
-            while time.time() - start_time < 5 and iterations < 1000:
-                if time.time() - start_time >= 5:
+        if has_only_one_item(moves):
+            max_move = moves[0][0]
+        else:
+            if temp not in self.visited:
+                self.visited[temp] = root
+            self.prev_node = root
+            board_moves = {}
+            for row in moves:
+                for move in row:
+                    board_moves[str(move)] = MCTSNode(color=self.color, move=move)
+            
+            start_time = time.time()
+            for _ in range(self.iterations):
+                if time.time() - start_time > 5:
                     break
                 self.move = None
                 self.stack = [temp]
@@ -222,50 +303,48 @@ class StudentAI():
                 if uct > max_uct:
                     max_uct = uct
                     max_move = node.move
-
-            # print()
-            # print(f"Playing as {self.color}")
-            # explored, wins = 0, 0
-            # for c in board_moves:
-            #     if board_moves[c].visits > 0:
-            #         node = board_moves[c]
-            #         print(f"{c} {node.uct(500)}, Wins: {node.wins} | Visits: {node.visits}")
-            #         if node.visits > 0:
-            #             explored += node.visits
-            #         wins += node.wins
-            # print(f"Explored: {explored} | Wins: {wins}") 
-            # print(self.board.get_all_possible_moves(self.color))
-                # self.backpropagation(temp)
+            """
+            print()
+            print(f"Playing as {self.color}")
+            explored, wins = 0, 0
+            for c in board_moves:
+                if board_moves[c].visits > 0:
+                    node = board_moves[c]
+                    print(f"{c} {node.uct(500)}, Wins: {node.wins} | Visits: {node.visits}")
+                    if node.visits > 0:
+                        explored += node.visits
+                    wins += node.wins
+            print(f"Explored: {explored} | Wins: {wins}") 
+            print(self.board.get_all_possible_moves(self.color))
+                self.backpropagation(temp)
             
-            # print(f"Time: {time.time() - start_time} | Iterations: {self.leaves} | limit_reached: {self.limit_reached}")
-            # print(f"White: {self.limit_white} | Black: {self.limit_black}")
-            # max_uct = -1
-            # for c in root.children:
-            #     node = self.visited[c]
-            #     uct = node.uct(self.iterations)
-            #     if uct > max_uct:  
-            #         max_move = node.move
-            #         max_uct =  uct
-
-        # print(f"Playing as {self.color}")
-        # print(f"original board {temp} Same? {temp == hash_board(self.board.board)}")
-        # print(f"Root Wins: {self.win_count} {root.wins} | Visits: {root.visits}")
-        # print(f"Cycles: {self.cycles}, Leaves: {self.leaves}")
-        # for c in root.children:
-        #     node = self.visited[c]
-        #     print(f" Wins: {node.wins} | Visits: {node.visits}")
+            print(f"Time: {time.time() - start_time} | Iterations: {self.leaves} | limit_reached: {self.limit_reached}")
+            print(f"White: {self.limit_white} | Black: {self.limit_black}")
+            max_uct = -1
+            for c in root.children:
+                node = self.visited[c]
+                uct = node.uct(self.iterations)
+                if uct > max_uct:  
+                    max_move = node.move
+                    max_uct =  uct
+            
+        print(f"Playing as {self.color}")
+        print(f"original board {temp} Same? {temp == hash_board(self.board.board)}")
+        print(f"Root Wins: {self.win_count} {root.wins} | Visits: {root.visits}")
+        print(f"Cycles: {self.cycles}, Leaves: {self.leaves}")
+        for c in root.children:
+            node = self.visited[c]
+            print(f" Wins: {node.wins} | Visits: {node.visits}")
         
-#         repeats = 0
-#         for n1 in self.visited:
-#             inst = 0
-#             for n2 in self.visited:
-#                 if n1 in self.visited[n2].children:
-#                     inst += 1
-#             if inst > 1:
-#                 repeats += 1
-#         print(f"Repeats: {repeats}")
-# 
+        repeats = 0
+        for n1 in self.visited:
+            inst = 0
+            for n2 in self.visited:
+                if n1 in self.visited[n2].children:
+                    inst += 1
+            if inst > 1:
+                repeats += 1
+        print(f"Repeats: {repeats}")
+        """
         self.board.make_move(max_move,self.color)
         return max_move
-
-    
